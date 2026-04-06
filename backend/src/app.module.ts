@@ -12,6 +12,7 @@ import { ServiceAgreementsModule } from './service-agreements/service-agreements
 import { ShiftsModule } from './shifts/shifts.module';
 import { ShiftNotesModule } from './shift-notes/shift-notes.module';
 import { InvoicesModule } from './invoices/invoices.module';
+import { SchadsModule } from './schads/schads.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 
@@ -34,6 +35,7 @@ import { AuditLogModule } from './audit-log/audit-log.module';
     ShiftsModule,
     ShiftNotesModule,
     InvoicesModule,
+    SchadsModule,
     IncidentsModule,
     AuditLogModule,
   ],
