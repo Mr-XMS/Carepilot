@@ -22,6 +22,11 @@ const REPORTABLE_CATEGORIES = new Set<IncidentCategory>([
   IncidentCategory.RESTRICTIVE_PRACTICE,
 ]);
 
+const OPEN_STATUSES: IncidentStatus[] = [
+  IncidentStatus.OPEN,
+  IncidentStatus.INVESTIGATING,
+];
+
 const REPORTABLE_DEADLINE_BUSINESS_DAYS = 5;
 
 @Injectable()
@@ -98,13 +103,13 @@ export class IncidentsService {
       }),
       this.prisma.incident.count({ where }),
       this.prisma.incident.count({
-        where: { organisationId, status: { in: [IncidentStatus.OPEN, IncidentStatus.INVESTIGATING] } },
+        where: { organisationId, status: { in: OPEN_STATUSES } },
       }),
       this.prisma.incident.count({
         where: {
           organisationId,
           isReportable: true,
-          status: { in: [IncidentStatus.OPEN, IncidentStatus.INVESTIGATING] },
+          status: { in: OPEN_STATUSES },
         },
       }),
     ]);
@@ -116,7 +121,7 @@ export class IncidentsService {
         : null,
       isOverdue:
         incident.isReportable &&
-        [IncidentStatus.OPEN, IncidentStatus.INVESTIGATING].includes(incident.status) &&
+        OPEN_STATUSES.includes(incident.status) &&
         new Date() > this.calculateReportingDeadline(incident.incidentDate),
     }));
 
@@ -250,7 +255,7 @@ export class IncidentsService {
       overdueReportables: incidents.filter(
         (i) =>
           i.isReportable &&
-          [IncidentStatus.OPEN, IncidentStatus.INVESTIGATING].includes(i.status) &&
+          OPEN_STATUSES.includes(i.status) &&
           new Date() > this.calculateReportingDeadline(i.incidentDate),
       ).length,
     };
@@ -275,7 +280,7 @@ export class IncidentsService {
       where: {
         organisationId,
         isReportable: true,
-        status: { in: [IncidentStatus.OPEN, IncidentStatus.INVESTIGATING] },
+        status: { in: OPEN_STATUSES },
       },
       include: {
         participant: { select: { firstName: true, lastName: true, ndisNumber: true } },

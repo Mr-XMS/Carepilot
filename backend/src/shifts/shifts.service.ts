@@ -73,8 +73,6 @@ export class ShiftsService {
       participantId: dto.participantId,
       userId: dto.userId,
       serviceAgreementItemId: dto.serviceAgreementItemId,
-      scheduledStart: dto.startDate,
-      scheduledEnd: dto.startDate,
     });
 
     const recurringPatternId = uuidv4();
