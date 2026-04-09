@@ -9,10 +9,16 @@ async function bootstrap() {
 
   app.use(helmet());
   app.setGlobalPrefix('api/v1');
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-  });
+const corsOrigin = process.env.CORS_ORIGIN;
+if (!corsOrigin) {
+  throw new Error('CORS_ORIGIN environment variable is required');
+}
+const allowedOrigins = corsOrigin.split(',').map((o) => o.trim());
+
+app.enableCors({
+  origin: allowedOrigins,
+  credentials: true,
+});
 
   app.useGlobalPipes(
     new ValidationPipe({
