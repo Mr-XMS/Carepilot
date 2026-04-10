@@ -18,6 +18,11 @@ export interface CalendarShift {
   isRecurring: boolean;
   recurringPatternId: string | null;
   notes: string | null;
+  cancelledAt: string | null;
+  cancelledByUserId: string | null;
+  cancellationReason: string | null;
+  noShowMarkedAt: string | null;
+  noShowMarkedByUserId: string | null;
   participant: {
     id: string;
     firstName: string;
@@ -31,6 +36,16 @@ export interface CalendarShift {
   serviceAgreementItem: {
     supportItemName: string;
   };
+  cancelledByUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  noShowMarkedByUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
 }
 
 export interface CreateShiftInput {
@@ -42,4 +57,31 @@ export interface CreateShiftInput {
   shiftType?: ShiftType;
   breakMinutes?: number;
   notes?: string;
+}
+
+export interface CancelShiftInput {
+  reason: string;
+}
+
+export interface ExceptionShift extends CalendarShift {
+  cancelledByUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  noShowMarkedByUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
+export interface ExceptionsResponse {
+  data: ExceptionShift[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

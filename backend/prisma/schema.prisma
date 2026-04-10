@@ -144,6 +144,8 @@ enum AuditAction {
   DELETE
   LOGIN
   EXPORT
+  CANCEL_SHIFT
+  NO_SHOW
 }
 
 // ============================================================
@@ -206,6 +208,8 @@ model User {
 
   organisation      Organisation    @relation(fields: [organisationId], references: [id])
   shifts            Shift[]
+  shiftsCancelled   Shift[]         @relation("ShiftCancelledBy")
+  shiftsNoShowBy    Shift[]         @relation("ShiftNoShowBy")
   shiftNotes        ShiftNote[]
   reportedIncidents Incident[]
   auditLogs         AuditLog[]
@@ -406,6 +410,11 @@ model Shift {
   clockInLng              Decimal?              @db.Decimal(10, 7)
   clockOutLat             Decimal?              @db.Decimal(10, 7)
   clockOutLng             Decimal?              @db.Decimal(10, 7)
+  cancelledAt             DateTime?
+  cancelledByUserId       String?
+  cancellationReason      String?
+  noShowMarkedAt          DateTime?
+  noShowMarkedByUserId    String?
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
 
@@ -413,6 +422,8 @@ model Shift {
   participant             Participant           @relation(fields: [participantId], references: [id])
   user                    User                  @relation(fields: [userId], references: [id])
   serviceAgreementItem    ServiceAgreementItem  @relation(fields: [serviceAgreementItemId], references: [id])
+  cancelledByUser         User?                 @relation("ShiftCancelledBy", fields: [cancelledByUserId], references: [id])
+  noShowMarkedByUser      User?                 @relation("ShiftNoShowBy", fields: [noShowMarkedByUserId], references: [id])
   shiftNotes              ShiftNote[]
   invoiceLineItems        InvoiceLineItem[]
 

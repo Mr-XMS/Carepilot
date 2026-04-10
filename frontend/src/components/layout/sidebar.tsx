@@ -10,6 +10,7 @@ import {
   Receipt,
   AlertTriangle,
   Settings,
+  ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/hooks/use-auth';
@@ -26,6 +27,12 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/participants', label: 'Participants', icon: Users },
   { href: '/roster', label: 'Roster', icon: Calendar },
+  {
+    href: '/roster/exceptions',
+    label: 'Exceptions',
+    icon: ShieldAlert,
+    roles: ['OWNER', 'ADMIN', 'COORDINATOR'],
+  },
   {
     href: '/service-agreements',
     label: 'Agreements',

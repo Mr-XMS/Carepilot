@@ -4,19 +4,25 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { Prisma, ShiftStatus, ShiftType } from '@prisma/client';
+import { Prisma, ShiftStatus, ShiftType, AuditAction } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../common/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { CreateRecurringShiftDto } from './dto/create-recurring-shift.dto';
+import { CancelShiftDto } from './dto/cancel-shift.dto';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
+import { QueryExceptionsDto } from './dto/query-exceptions.dto';
 
 @Injectable()
 export class ShiftsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditLog: AuditLogService,
+  ) {}
 
   async create(organisationId: string, dto: CreateShiftDto) {
     await this.validateShiftReferences(organisationId, dto);
@@ -204,17 +210,17 @@ export class ShiftsService {
     startDate: string,
     endDate: string,
     userId?: string,
-) {
-  return this.prisma.shift.findMany({
-    where: {
-      organisationId,
-      ...(userId && { userId }),
-      status: { notIn: [ShiftStatus.CANCELLED, ShiftStatus.NO_SHOW] },
-      scheduledStart: {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+  ) {
+    return this.prisma.shift.findMany({
+      where: {
+        organisationId,
+        ...(userId && { userId }),
+        status: { notIn: [ShiftStatus.CANCELLED, ShiftStatus.NO_SHOW] },
+        scheduledStart: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
       },
-    },
       include: {
         participant: { select: { id: true, firstName: true, lastName: true } },
         user: { select: { id: true, firstName: true, lastName: true } },
@@ -222,6 +228,55 @@ export class ShiftsService {
       },
       orderBy: { scheduledStart: 'asc' },
     });
+  }
+
+  async findExceptions(organisationId: string, query: QueryExceptionsDto) {
+    const {
+      participantId,
+      userId,
+      status,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 50,
+    } = query;
+
+    const where: Prisma.ShiftWhereInput = {
+      organisationId,
+      status: status
+        ? status
+        : { in: [ShiftStatus.CANCELLED, ShiftStatus.NO_SHOW] },
+      ...(participantId && { participantId }),
+      ...(userId && { userId }),
+      ...(startDate && endDate && {
+        scheduledStart: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      }),
+    };
+
+    const [shifts, total] = await Promise.all([
+      this.prisma.shift.findMany({
+        where,
+        include: {
+          participant: { select: { id: true, firstName: true, lastName: true } },
+          user: { select: { id: true, firstName: true, lastName: true } },
+          cancelledByUser: { select: { id: true, firstName: true, lastName: true } },
+          noShowMarkedByUser: { select: { id: true, firstName: true, lastName: true } },
+          serviceAgreementItem: { select: { supportItemName: true } },
+        },
+        orderBy: { scheduledStart: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.shift.count({ where }),
+    ]);
+
+    return {
+      data: shifts,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOne(organisationId: string, id: string) {
@@ -235,6 +290,8 @@ export class ShiftsService {
             serviceAgreement: { select: { id: true, status: true } },
           },
         },
+        cancelledByUser: { select: { id: true, firstName: true, lastName: true } },
+        noShowMarkedByUser: { select: { id: true, firstName: true, lastName: true } },
         shiftNotes: {
           include: {
             user: { select: { firstName: true, lastName: true } },
@@ -301,17 +358,48 @@ export class ShiftsService {
     });
   }
 
-  async cancel(organisationId: string, id: string) {
+  async cancel(
+    organisationId: string,
+    id: string,
+    cancelledByUserId: string,
+    dto: CancelShiftDto,
+  ) {
     const shift = await this.findOne(organisationId, id);
 
     if (shift.status === ShiftStatus.COMPLETED) {
       throw new BadRequestException('Cannot cancel a completed shift');
     }
 
-    return this.prisma.shift.update({
+    if (shift.status === ShiftStatus.CANCELLED) {
+      throw new BadRequestException('Shift is already cancelled');
+    }
+
+    const updated = await this.prisma.shift.update({
       where: { id },
-      data: { status: ShiftStatus.CANCELLED },
+      data: {
+        status: ShiftStatus.CANCELLED,
+        cancelledAt: new Date(),
+        cancelledByUserId,
+        cancellationReason: dto.reason,
+      },
     });
+
+    await this.auditLog.log({
+      organisationId,
+      userId: cancelledByUserId,
+      entityType: 'Shift',
+      entityId: id,
+      action: AuditAction.CANCEL_SHIFT,
+      changes: {
+        previousStatus: shift.status,
+        reason: dto.reason,
+        participantId: shift.participantId,
+        workerId: shift.userId,
+        scheduledStart: shift.scheduledStart,
+      },
+    });
+
+    return updated;
   }
 
   async cancelRecurringSeries(organisationId: string, recurringPatternId: string) {
@@ -399,17 +487,40 @@ export class ShiftsService {
     });
   }
 
-  async markNoShow(organisationId: string, id: string) {
+  async markNoShow(
+    organisationId: string,
+    id: string,
+    markedByUserId: string,
+  ) {
     const shift = await this.findOne(organisationId, id);
 
     if (shift.status !== ShiftStatus.SCHEDULED) {
       throw new BadRequestException('Can only mark scheduled shifts as no-show');
     }
 
-    return this.prisma.shift.update({
+    const updated = await this.prisma.shift.update({
       where: { id },
-      data: { status: ShiftStatus.NO_SHOW },
+      data: {
+        status: ShiftStatus.NO_SHOW,
+        noShowMarkedAt: new Date(),
+        noShowMarkedByUserId: markedByUserId,
+      },
     });
+
+    await this.auditLog.log({
+      organisationId,
+      userId: markedByUserId,
+      entityType: 'Shift',
+      entityId: id,
+      action: AuditAction.NO_SHOW,
+      changes: {
+        participantId: shift.participantId,
+        workerId: shift.userId,
+        scheduledStart: shift.scheduledStart,
+      },
+    });
+
+    return updated;
   }
 
   private async validateShiftReferences(

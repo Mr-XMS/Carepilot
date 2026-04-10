@@ -16,9 +16,11 @@ import { ShiftsService } from './shifts.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { CreateRecurringShiftDto } from './dto/create-recurring-shift.dto';
+import { CancelShiftDto } from './dto/cancel-shift.dto';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
+import { QueryExceptionsDto } from './dto/query-exceptions.dto';
 import { OrgId, CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -61,6 +63,13 @@ export class ShiftsController {
     return this.shiftsService.findCalendarView(orgId, startDate, endDate, userId);
   }
 
+  @Get('exceptions')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.COORDINATOR)
+  @ApiOperation({ summary: 'List cancelled and no-show shifts' })
+  findExceptions(@OrgId() orgId: string, @Query() query: QueryExceptionsDto) {
+    return this.shiftsService.findExceptions(orgId, query);
+  }
+
   @Get('my-shifts')
   @ApiOperation({ summary: 'Get shifts assigned to the current user (support worker view)' })
   findMyShifts(
@@ -91,9 +100,14 @@ export class ShiftsController {
 
   @Post(':id/cancel')
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.COORDINATOR)
-  @ApiOperation({ summary: 'Cancel a scheduled shift' })
-  cancel(@OrgId() orgId: string, @Param('id', ParseUUIDPipe) id: string) {
-    return this.shiftsService.cancel(orgId, id);
+  @ApiOperation({ summary: 'Cancel a shift with reason' })
+  cancel(
+    @OrgId() orgId: string,
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelShiftDto,
+  ) {
+    return this.shiftsService.cancel(orgId, id, userId, dto);
   }
 
   @Post('recurring/:patternId/cancel')
@@ -131,7 +145,11 @@ export class ShiftsController {
   @Post(':id/no-show')
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.COORDINATOR)
   @ApiOperation({ summary: 'Mark a shift as no-show' })
-  markNoShow(@OrgId() orgId: string, @Param('id', ParseUUIDPipe) id: string) {
-    return this.shiftsService.markNoShow(orgId, id);
+  markNoShow(
+    @OrgId() orgId: string,
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.shiftsService.markNoShow(orgId, id, userId);
   }
 }
