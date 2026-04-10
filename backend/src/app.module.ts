@@ -15,6 +15,7 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { SchadsModule } from './schads/schads.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { AuditLogModule } from './audit-log/audit-log.module';
       { name: 'medium', ttl: 10000, limit: 20 },
       { name: 'long', ttl: 60000, limit: 100 },
     ]),
-    PrismaModule,
+    PrismaModule,HealthModule,
     AuthModule,
     OrganisationsModule,
     UsersModule,
