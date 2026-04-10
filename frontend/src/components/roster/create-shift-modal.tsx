@@ -53,7 +53,7 @@ export function CreateShiftModal({
   initialHour,
   onClose,
 }: CreateShiftModalProps) {
-  const participants = useParticipants({ limit: 200, status: 'ACTIVE' });
+  const participants = useParticipants({ limit: 100, status: 'ACTIVE' });
   const workers = useSupportWorkers();
   const createShift = useCreateShift();
 
