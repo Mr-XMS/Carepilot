@@ -9,6 +9,8 @@ import { useCalendarShifts } from '@/hooks/use-shifts';
 import { useSupportWorkers } from '@/hooks/use-users';
 import { WeekNav } from '@/components/roster/week-nav';
 import { WeekCalendar } from '@/components/roster/week-calendar';
+import { CreateShiftModal } from '@/components/roster/create-shift-modal';
+import { ShiftDrawer } from '@/components/roster/shift-drawer';
 import {
   getWeekStart,
   getWeekDays,
@@ -21,6 +23,14 @@ export default function RosterPage() {
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | 'ALL'>('ALL');
 
+  // Modal state (create shift)
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalDate, setModalDate] = useState<Date | null>(null);
+  const [modalHour, setModalHour] = useState<number | null>(null);
+
+  // Drawer state (shift details)
+  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
+
   const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart]);
   const { startISO, endISO } = useMemo(() => getWeekRange(weekStart), [weekStart]);
 
@@ -32,13 +42,19 @@ export default function RosterPage() {
   );
 
   const handleShiftClick = (shift: CalendarShift) => {
-    // Day 3: open shift details drawer
-    console.log('Shift clicked:', shift.id);
+    setSelectedShiftId(shift.id);
   };
 
   const handleSlotClick = (date: Date, hour: number) => {
-    // Day 3: open create-shift modal pre-filled with date + hour
-    console.log('Slot clicked:', date.toISOString(), hour);
+    setModalDate(date);
+    setModalHour(hour);
+    setModalOpen(true);
+  };
+
+  const handleNewShift = () => {
+    setModalDate(new Date());
+    setModalHour(9);
+    setModalOpen(true);
   };
 
   const isLoading = shifts.isLoading || workers.isLoading;
@@ -48,11 +64,13 @@ export default function RosterPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-900">Roster</h1>
-        <p className="mt-1 text-sm text-ink-500">
-          Schedule and manage shifts across your team.
-        </p>
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink-900">Roster</h1>
+          <p className="mt-1 text-sm text-ink-500">
+            Schedule and manage shifts across your team.
+          </p>
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -64,6 +82,7 @@ export default function RosterPage() {
           onNextWeek={() => setWeekStart((w) => shiftWeek(w, 1))}
           onToday={() => setWeekStart(getWeekStart(new Date()))}
           onWorkerChange={setSelectedWorkerId}
+          onNewShift={handleNewShift}
         />
 
         {isLoading && (
@@ -107,6 +126,15 @@ export default function RosterPage() {
           />
         )}
       </Card>
+
+      <CreateShiftModal
+        open={modalOpen}
+        initialDate={modalDate}
+        initialHour={modalHour}
+        onClose={() => setModalOpen(false)}
+      />
+
+      <ShiftDrawer shiftId={selectedShiftId} onClose={() => setSelectedShiftId(null)} />
     </div>
   );
 }
