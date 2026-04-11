@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useOutstandingSummary } from '@/hooks/use-invoices';
+import { useRegisterReport } from '@/hooks/use-incidents';
 import { Users, Calendar, Receipt, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data: outstandingSummary } = useOutstandingSummary();
+  const { data: incidentReport } = useRegisterReport();
   const greeting = getGreeting();
 
   const outstandingValue = outstandingSummary
@@ -56,8 +58,8 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="Open incidents"
-          value="—"
-          hint="Requires attention"
+          value={incidentReport ? String(incidentReport.byStatus.OPEN || 0) : '—'}
+          hint={incidentReport?.overdueCount ? `${incidentReport.overdueCount} overdue` : 'Requires attention'}
           icon={AlertTriangle}
           href="/incidents"
         />
