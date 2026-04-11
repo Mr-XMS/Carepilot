@@ -7,6 +7,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { CancelShiftModal } from './cancel-shift-modal';
+import { ShiftNotesPanel } from './shift-notes-panel';
 import { useShiftDetails, useCancelShift, useMarkNoShow } from '@/hooks/use-shifts';
 import type { ShiftStatus } from '@/types/shift';
 
@@ -127,13 +128,16 @@ export function ShiftDrawer({ shiftId, onClose }: ShiftDrawerProps) {
                 </DetailRow>
               )}
 
-              {/* Notes */}
+              {/* Shift notes (original field) */}
               {shift.notes && (
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-ink-500">Notes</p>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-ink-900">{shift.notes}</p>
                 </div>
               )}
+
+              {/* Shift notes panel (CRUD) */}
+              <ShiftNotesPanel shiftId={shift.id} />
 
               {/* Cancellation details */}
               {shift.status === 'CANCELLED' && (
