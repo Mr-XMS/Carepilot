@@ -85,8 +85,8 @@ export default function IncidentsPage() {
           <SummaryCard
             icon={<ShieldAlert className="h-4 w-4" />}
             label="Open"
-            value={String(report.byStatus.OPEN || 0)}
-            danger={(report.byStatus.OPEN || 0) > 0}
+            value={String(report.byStatus?.OPEN ?? 0)}
+            danger={(report.byStatus?.OPEN ?? 0) > 0}
           />
           <SummaryCard
             icon={<AlertTriangle className="h-4 w-4" />}
