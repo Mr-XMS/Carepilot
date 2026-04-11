@@ -75,30 +75,30 @@ export default function IncidentsPage() {
       </div>
 
       {/* Summary cards */}
-      {report && (
+      {report?.summary && (
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <SummaryCard
             icon={<AlertTriangle className="h-4 w-4" />}
             label="Total incidents"
-            value={String(report.total)}
+            value={String(report.summary.total)}
           />
           <SummaryCard
             icon={<ShieldAlert className="h-4 w-4" />}
             label="Open"
-            value={String(report.byStatus?.OPEN ?? 0)}
-            danger={(report.byStatus?.OPEN ?? 0) > 0}
+            value={String(report.summary.byStatus?.OPEN ?? 0)}
+            danger={(report.summary.byStatus?.OPEN ?? 0) > 0}
           />
           <SummaryCard
             icon={<AlertTriangle className="h-4 w-4" />}
             label="Reportable"
-            value={String(report.reportableCount)}
-            danger={report.reportableCount > 0}
+            value={String(report.summary.reportableCount)}
+            danger={report.summary.reportableCount > 0}
           />
           <SummaryCard
             icon={<Clock className="h-4 w-4" />}
             label="Overdue"
-            value={String(report.overdueCount)}
-            danger={report.overdueCount > 0}
+            value={String(report.summary.overdueReportables)}
+            danger={report.summary.overdueReportables > 0}
           />
         </div>
       )}

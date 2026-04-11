@@ -83,13 +83,18 @@ export interface QueryIncidentsParams {
   limit?: number;
 }
 
-export interface RegisterReport {
+export interface RegisterReportSummary {
   total: number;
-  byCategory: Record<IncidentCategory, number>;
-  bySeverity: Record<IncidentSeverity, number>;
-  byStatus: Record<IncidentStatus, number>;
+  byCategory: Partial<Record<IncidentCategory, number>>;
+  bySeverity: Partial<Record<IncidentSeverity, number>>;
+  byStatus: Partial<Record<IncidentStatus, number>>;
   reportableCount: number;
-  overdueCount: number;
+  overdueReportables: number;
+}
+
+export interface RegisterReport {
+  summary: RegisterReportSummary;
+  incidents: Incident[];
 }
 
 export interface OverdueReportable extends Incident {
