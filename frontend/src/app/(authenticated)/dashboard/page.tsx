@@ -2,12 +2,21 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { useOutstandingSummary } from '@/hooks/use-invoices';
 import { Users, Calendar, Receipt, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { data: outstandingSummary } = useOutstandingSummary();
   const greeting = getGreeting();
+
+  const outstandingValue = outstandingSummary
+    ? `$${outstandingSummary.totalOutstanding.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+    : '—';
+  const outstandingHint = outstandingSummary
+    ? `${outstandingSummary.invoiceCount} invoice${outstandingSummary.invoiceCount === 1 ? '' : 's'} outstanding`
+    : 'Total receivables';
 
   return (
     <div className="max-w-6xl mx-auto px-8 py-10">
@@ -40,8 +49,8 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="Outstanding invoices"
-          value="—"
-          hint="Total receivables"
+          value={outstandingValue}
+          hint={outstandingHint}
           icon={Receipt}
           href="/invoices"
         />
